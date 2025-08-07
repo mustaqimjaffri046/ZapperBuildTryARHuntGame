@@ -1,0 +1,46 @@
+{
+  "project_info": {
+    "project_number": "197858058216",
+    "project_id": "ihunt4-7e1d4",
+    "storage_bucket": "ihunt4-7e1d4.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:197858058216:android:38dd40df080eae0f93ce5d",
+        "android_client_info": {
+          "package_name": "com.iHunt4ART.iHunt4"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "197858058216-bum2jg1bgm8377pr3thd70qg7le9l4c9.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBNyutV0oohPs4px93FjDCdFUnXZVsZcmw"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "197858058216-bum2jg1bgm8377pr3thd70qg7le9l4c9.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "197858058216-3sb1c984lfshu3uhn9kckhegfe2jj686.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.iHunt4ART.iHunt4"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
