@@ -1,8 +1,6 @@
-<!-- Zappar WebGL template for Unity 2020 and above versions -->
-<!-- NFYNT -->
+<!-- Zappar WebGL template with QR scanner integration -->
 <!DOCTYPE html>
 <html lang="en-us">
-
 <head>
     <meta charset="utf-8">
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
@@ -10,119 +8,61 @@
     <link rel="shortcut icon" href="favicon.ico">
     <title>HuntingGame</title>
     <style>
-        html {
-            box-sizing: border-box;
-        }
-
-        *,
-        *:before,
-        *:after {
-            box-sizing: inherit;
-        }
-
-        html,
-        body {
+        html, body {
             position: fixed;
             top: 0; left: 0; right: 0; bottom: 0;
-        }
-
-        canvas {
-            display: block;
-        }
-
-        body {
             margin: 0;
         }
-
+        canvas { display: block; }
         #unity-container {
-            width: 100%;
-            height: 100%;
-        }
-
-        #unity-canvas {
-            width: 100%;
-            height: 100%;
-
-            background: #231F20;
-        }
-
-        #loading-cover {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-        }
-
-        #unity-loading-bar {
-            flex: 1 1 auto;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-        }
-
-        #unity-progress-bar-empty {
-            width: 80%;
-            height: 24px;
-            margin: 10px 20px 20px 10px;
-            text-align: left;
-            border: 1px solid white;
-            padding: 2px;
-        }
-
-        #unity-progress-bar-full {
-            width: 0%;
-            height: 100%;
-            background: white;
-        }
-
-        .light #unity-progress-bar-empty {
-            border-color: black;
-        }
-
-        .light #unity-progress-bar-full {
-            background: black;
-        }
-
-        .spinner,
-        .spinner:after {
-            border-radius: 50%;
-            width: 5em;
-            height: 5em;
-        }
-
-        .spinner {
-            margin: 10px;
-            font-size: 10px;
+            width: 360px;
+            height: 640px;
+            margin: 0 auto;
             position: relative;
-            text-indent: -9999em;
-            border-top: 1.1em solid rgba(255, 255, 255, 0.2);
-            border-right: 1.1em solid rgba(255, 255, 255, 0.2);
-            border-bottom: 1.1em solid rgba(255, 255, 255, 0.2);
-            border-left: 1.1em solid #ffffff;
-            transform: translateZ(0);
-            animation: spinner-spin 1.1s infinite linear;
         }
+        #unity-canvas { width: 100%; height: 100%; background: #231F20; }
+        #loading-cover {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            display: flex; justify-content: center; align-items: center;
+        }
+        #unity-progress-bar-empty {
+            width: 80%; height: 24px; border: 1px solid white; padding: 2px; margin: 10px;
+        }
+        #unity-progress-bar-full { width: 0%; height: 100%; background: white; }
+        .spinner, .spinner:after {
+            border-radius: 50%; width: 5em; height: 5em;
+        }
+        .spinner {
+            border-top: 1.1em solid rgba(255,255,255,0.2);
+            border-right: 1.1em solid rgba(255,255,255,0.2);
+            border-bottom: 1.1em solid rgba(255,255,255,0.2);
+            border-left: 1.1em solid #fff;
+            animation: spin 1.1s infinite linear;
+        }
+        @keyframes spin { 0% { transform: rotate(0deg);} 100% { transform: rotate(360deg);} }
 
-        @keyframes spinner-spin {
-            0% {
-                transform: rotate(0deg);
-            }
-
-            100% {
-                transform: rotate(360deg);
-            }
+        /* QR debug overlay */
+        #qr-debug {
+            position: absolute;
+            top: 10px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 320px;
+            padding: 10px;
+            background: rgba(0,0,0,0.6);
+            color: #fff;
+            font-family: sans-serif;
+            font-size: 14px;
+            text-align: center;
+            border-radius: 5px;
+            z-index: 1000;
         }
     </style>
 </head>
-
 <body class="dark">
     <div id="unity-container" class="unity-desktop">
         <canvas id="unity-canvas"></canvas>
+        <div id="qr-debug">QR Status: Waiting...</div>
     </div>
     <div id="loading-cover" style="display:none;">
         <div id="unity-loading-bar">
@@ -132,34 +72,97 @@
             <div class="spinner"></div>
         </div>
     </div>
-    <script type="text/javascript" src="https://libs.zappar.com/zappar-cv/2.1.9/zappar-cv.js"></script>
+
+    <script src="https://libs.zappar.com/zappar-cv/2.1.9/zappar-cv.js"></script>
+
+    <!-- QR SCANNER USING jsQR -->
+    <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js"></script>
     <script>
-        var db = indexedDB.open("dummy_indexdb", 1); // iOS 14.6 fix; the call to open indexdb hangs forever otherwise
+        let qrScannerActive = false;
+        let qrVideo = null;
+        let qrStream = null;
+
+        function StartQRScan() {
+            if (qrScannerActive) return;
+            qrScannerActive = true;
+
+            const debugDiv = document.getElementById("qr-debug");
+            debugDiv.innerText = "QR Status: Scanning...";
+
+            qrVideo = document.createElement('video');
+            qrVideo.setAttribute('playsinline', true);
+            qrVideo.style.display = 'none';
+            document.body.appendChild(qrVideo);
+
+            navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } })
+                .then(stream => {
+                    qrStream = stream;
+                    qrVideo.srcObject = stream;
+                    qrVideo.play();
+                    scanLoop();
+                })
+                .catch(err => {
+                    console.error("Camera error: ", err);
+                    debugDiv.innerText = "QR Status: Camera error!";
+                    qrScannerActive = false;
+                });
+
+            function scanLoop() {
+                if (!qrScannerActive) return;
+                if (qrVideo.readyState === qrVideo.HAVE_ENOUGH_DATA) {
+                    const canvas = document.createElement('canvas');
+                    canvas.width = qrVideo.videoWidth;
+                    canvas.height = qrVideo.videoHeight;
+                    const ctx = canvas.getContext('2d');
+                    ctx.drawImage(qrVideo, 0, 0, canvas.width, canvas.height);
+                    const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+                    const code = jsQR(imageData.data, canvas.width, canvas.height);
+
+                    if (code) {
+                        console.log("QR Detected:", code.data);
+                        debugDiv.innerText = "QR Status: Scanned → " + code.data;
+
+                        if (window.uarGameInstance) {
+                            window.uarGameInstance.SendMessage("QRCodeScanner", "OnQRScanned", code.data);
+                        }
+                        StopQRScan();
+                        return;
+                    }
+                }
+                requestAnimationFrame(scanLoop);
+            }
+        }
+
+        function StopQRScan() {
+            qrScannerActive = false;
+            const debugDiv = document.getElementById("qr-debug");
+            debugDiv.innerText = "QR Status: Stopped";
+
+            if (qrStream) {
+                qrStream.getTracks().forEach(track => track.stop());
+                qrStream = null;
+            }
+            if (qrVideo) {
+                qrVideo.remove();
+                qrVideo = null;
+            }
+        }
+    </script>
+    <!-- END QR SCANNER -->
+
+    <script>
+        var db = indexedDB.open("dummy_indexdb", 1); // iOS 14.6 fix
 
         const buildUrl = "Build";
-        const loaderUrl = buildUrl + "/035e67f3c916b9319c07d25e260897be.loader.js";
+        const loaderUrl = buildUrl + "/a9972641d9d205c2755447a68eb8746b.loader.js";
         const config = {
-            dataUrl: buildUrl + "/e1f331f8734ff82c8f1c7539a96215cd.data",
-            frameworkUrl: buildUrl + "/7287156d28a175d996bad1a4a91685ba.framework.js",
-            codeUrl: buildUrl + "/a3bbc1528a816f24b3d1f276ebf1e78c.wasm",
+            dataUrl: buildUrl + "/00e1c5b24d056be9e2a2949c84e6f1e7.data",
+            frameworkUrl: buildUrl + "/f4cd687e6e58f4ccde8faca1e7f9aaae.framework.js",
+            codeUrl: buildUrl + "/16bc666d01a6d0d4dd4fa223eaf3b96b.wasm",
             streamingAssetsUrl: "StreamingAssets",
             companyName: "MJ",
             productName: "HuntingGame",
             productVersion: "2.0",
-        //Useful when used along with Filename as Hashes option
-            cacheControl: function (url) {
-            // typically includes: .data, .bundle, .zpt
-            if (url.match(/\.data/) || url.match(/\.bundle/) || url.match(/\.zpt/)) {
-             return "immutable";
-}
-   
-            if (url.match(/\.mp4/) || url.match(/\.custom/) || url.match(/\.zbin/)) {
-                return "immutable";
-            }   
-            // Disable explicit caching for all other files.
-            // Note: the default browser cache may cache them anyway.
-            return "no-store";
-            },
         };
 
         const container = document.querySelector("#unity-container");
@@ -171,8 +174,6 @@
 
         if (/iPhone|iPad|iPod|Android/i.test(navigator.userAgent)) {
             container.className = "unity-mobile";
-            //config.matchWebGLToCanvasSize = false;    
-            //set devicePixelRatio=1; to avoid draining fillrate performance on mobile and override low DPI mode
             config.devicePixelRatio = window.devicePixelRatio;
         }
         loadingCover.style.display = "";
@@ -181,7 +182,6 @@
 
         const script = document.createElement("script");
         script.src = loaderUrl;
-        //script.onload = () => { CreateUnityLoader();   };
         document.body.appendChild(script);
 
         window.zappar.permission_request_ui_promise().then(WaitForZCVLoad);
@@ -206,8 +206,6 @@
                 alert(message);
             });
         }
-
     </script>
 </body>
-
 </html>
