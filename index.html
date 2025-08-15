@@ -133,20 +133,7 @@
             }
         }
 
-        function StopQRScan() {
-            qrScannerActive = false;
-            const debugDiv = document.getElementById("qr-debug");
-            debugDiv.innerText = "QR Status: Stopped";
-
-            if (qrStream) {
-                qrStream.getTracks().forEach(track => track.stop());
-                qrStream = null;
-            }
-            if (qrVideo) {
-                qrVideo.remove();
-                qrVideo = null;
-            }
-        }
+        
     </script>
     <!-- END QR SCANNER -->
 
