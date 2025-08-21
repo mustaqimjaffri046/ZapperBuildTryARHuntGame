@@ -1,9 +1,9 @@
 const cacheName = "DefaultCompany-PackageAssetStore-0.1.0";
 const contentToCache = [
     "Build/ZapperBuildTryARHuntGame.loader.js",
-    "Build/ZapperBuildTryARHuntGame.framework.js.br",
-    "Build/ZapperBuildTryARHuntGame.data.br",
-    "Build/ZapperBuildTryARHuntGame.wasm.br",
+    "Build/ZapperBuildTryARHuntGame.framework.js",
+    "Build/ZapperBuildTryARHuntGame.data",
+    "Build/ZapperBuildTryARHuntGame.wasm",
     "TemplateData/style.css"
 
 ];
