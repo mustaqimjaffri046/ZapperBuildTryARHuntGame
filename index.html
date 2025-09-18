@@ -404,6 +404,37 @@ window.addEventListener("load", () => {
             }
         }
     </script>
+<script>
+function removeDebugCanvases() {
+    document.querySelectorAll("canvas, div").forEach(el => {
+        const id = el.id || "";
+        const style = window.getComputedStyle(el);
+
+        // Remove known debug IDs
+        if (id.includes("debug") || id === "debugKps" || id === "text_debugger") {
+            el.remove();
+            return;
+        }
+
+        // Remove full-screen absolute canvases (likely wTracker debug)
+        if (el.tagName === "CANVAS" &&
+            style.position === "absolute" &&
+            style.zIndex !== "auto" &&
+            style.top === "0px" && style.left === "0px" &&
+            el.width >= window.innerWidth * 0.9 && el.height >= window.innerHeight * 0.9
+        ) {
+            el.remove();
+        }
+    });
+}
+
+// Run after load, and repeat a few times in case wTracker creates canvas later
+window.addEventListener("load", () => {
+    removeDebugCanvases();
+    setTimeout(removeDebugCanvases, 1000);
+    setTimeout(removeDebugCanvases, 2000);
+});
+</script>
 
 
 </body>
