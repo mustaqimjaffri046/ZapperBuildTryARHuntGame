@@ -36,12 +36,26 @@
 
 <script>
 window.addEventListener("load", () => {
-    // Give wtracker.js some time to inject debug UI
     setTimeout(() => {
-        document.querySelectorAll("#debugKps, #text_debugger").forEach(el => {
-            el.remove(); // removes the debug overlay elements
+        document.querySelectorAll("canvas, div").forEach(el => {
+            const id = el.id || "";
+            // remove if it's a debug element or suspicious full-screen overlay
+            if (id.includes("debug") || id === "debugKps" || id === "text_debugger") {
+                el.remove();
+            } else {
+                const style = window.getComputedStyle(el);
+                if (
+                    style.position === "absolute" &&
+                    style.zIndex !== "auto" &&
+                    (style.top === "0px" && style.left === "0px") &&
+                    (el.width >= window.innerWidth * 0.9 || el.height >= window.innerHeight * 0.9)
+                ) {
+                    // Looks like a fullscreen debug canvas
+                    el.remove();
+                }
+            }
         });
-    }, 1000); // wait 1 second just to be safe
+    }, 1500); // wait a little longer to catch late-created elements
 });
 </script>
 
