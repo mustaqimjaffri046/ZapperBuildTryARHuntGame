@@ -500,6 +500,90 @@
           }, 500);
       }
 
+
+
+	</script>
+	<!-- jsQR -->
+    <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js"></script>
+
+    <script>
+        let qrScannerActive = false;
+        let qrVideo = null;
+        let qrStream = null;
+
+        function StartQRScan() {
+            if (qrScannerActive) return;
+            qrScannerActive = true;
+
+            // Notify Unity: scanning started
+            if (window.unityInstance) {
+                window.unityInstance.SendMessage("QRCodeScanner", "OnQRScanningStarted", "");
+            }
+
+            qrVideo = document.createElement('video');
+            qrVideo.setAttribute('playsinline', true);
+            qrVideo.style.display = 'none';
+            document.body.appendChild(qrVideo);
+
+            navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } })
+                .then(stream => {
+                    qrStream = stream;
+                    qrVideo.srcObject = stream;
+                    qrVideo.play();
+                    scanLoop();
+                })
+                .catch(err => {
+                    console.error("Camera error: ", err);
+                    qrScannerActive = false;
+                    if (window.unityInstance) {
+                        window.unityInstance.SendMessage("QRCodeScanner", "OnQRScanningError", "Camera error!");
+                    }
+                });
+
+            function scanLoop() {
+                if (!qrScannerActive) return;
+
+                if (qrVideo.readyState === qrVideo.HAVE_ENOUGH_DATA) {
+                    const canvas = document.createElement('canvas');
+                    canvas.width = qrVideo.videoWidth;
+                    canvas.height = qrVideo.videoHeight;
+                    const ctx = canvas.getContext('2d');
+                    ctx.drawImage(qrVideo, 0, 0, canvas.width, canvas.height);
+                    const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+                    const code = jsQR(imageData.data, canvas.width, canvas.height);
+
+                    if (code) {
+                        // Notify Unity: QR scanned
+                        if (window.unityInstance) {
+                            window.unityInstance.SendMessage("QRCodeScanner", "OnQRScanned", code.data);
+                        }
+                        StopQRScan();
+                        return;
+                    }
+                }
+                requestAnimationFrame(scanLoop);
+            }
+        }
+
+        function StopQRScan() {
+            if (!qrScannerActive) return;
+            qrScannerActive = false;
+
+            if (qrStream) {
+                qrStream.getTracks().forEach(track => track.stop());
+                qrStream = null;
+            }
+            if (qrVideo) {
+                qrVideo.remove();
+                qrVideo = null;
+            }
+
+            // Notify Unity: scanning stopped
+            if (window.unityInstance) {
+                window.unityInstance.SendMessage("QRCodeScanner", "OnQRScanningStopped", "");
+            }
+        }
+
     </script>
   </body>
 </html>
