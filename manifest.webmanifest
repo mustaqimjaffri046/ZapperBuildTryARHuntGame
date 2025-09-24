@@ -1,6 +1,6 @@
 {
-    "name": "ARHuntGameProcarma",
-    "short_name": "ARHuntGameProcarma",
+    "name": "ARHunt",
+    "short_name": "ARHunt",
     "start_url": "index.html",
     "display": "fullscreen",
     "background_color": "#231F20",
